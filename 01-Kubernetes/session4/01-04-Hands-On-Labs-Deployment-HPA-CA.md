@@ -77,7 +77,7 @@ web-rs   3         3         3       20s
 
 5. Delete one pod:
 ```bash
-kubectl delete pod web-rs-abc12
+kubectl delete pod <pod-name-from-above>
 ```
 
 6. Immediately check pods:
@@ -469,10 +469,20 @@ Should show READY=2/2 and only 2 pods.
    - If it exists, skip to step 3.
    - If not found, proceed to step 2.
 
-2. **Install Metrics Server** (for self-managed clusters):
+2. **Install Metrics Server** :
+   
+   for Minikube:
+   ```bash
+   minikube addons enable metrics-server
+   ```
+   
+   for self-managed clusters:
    ```bash
    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
    ```
+
+  for EKS or any managed Kubernetes:
+   Use their Addons to install this
 
 3. **Wait for Metrics Server to be ready**:
    ```bash
