@@ -574,7 +574,21 @@ spec:
         value: 50
         periodSeconds: 60
 ```
+### 3. Create service: `app-svc.yaml`
 
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: hpa-demo
+spec:
+  selector:
+    app: hpa-demo
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+```
 
 ### Steps:
 
@@ -582,6 +596,7 @@ spec:
    ```bash
    kubectl apply -f app-deployment.yaml
    kubectl apply -f hpa.yaml
+   kubectl apply -f app-svc.yaml
    ```
 
 2. **Verify HPA creation**:
