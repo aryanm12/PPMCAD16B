@@ -227,6 +227,37 @@ Expose nginx via a cloud provider LoadBalancer (for EKS)
    - LB forwards to node on NodePort
    - kube-proxy forwards to Pod on target-port
 
+
+6. **Create an NLB with annotations**
+
+   Create a file named `nginx-lb-service-nlb.yaml`:
+   ```yaml
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: nginx-lb-nlb
+     annotations:
+       service.beta.kubernetes.io/aws-load-balancer-type: "nlb"  # Use Network Load Balancer
+       service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+       service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+       service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+   spec:
+     selector:
+       app: nginx-lb
+     ports:
+       - protocol: TCP
+         port: 80
+         targetPort: 80
+     type: LoadBalancer
+   ```
+
+   ```bash
+   kubectl apply -f nginx-lb-service-nlb.yaml
+   kubectl get svc
+   ```
+   Expected: Service shows `<pending>` for EXTERNAL-IP initially
+   then a NLB gets created
+
 ---
 
 ## Lab 4: Service Discovery with DNS
