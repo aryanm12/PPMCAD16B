@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ebs-pvc-with-sc-demo
+spec:
+  accessModes:
+    - ReadWriteOnce # Must be compatible with the PV it's binding to
+  resources:
+    requests:
+      storage: 5Gi # Specifies the amount of storage requested
+  storageClassName: ebs-sc-demo # Indicates which Storage Class to use for provisioning
