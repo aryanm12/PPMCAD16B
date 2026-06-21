@@ -20,13 +20,24 @@ Create ConfigMaps from literals and files, then inject them as environment varia
 ### Steps
 
 #### 1.1: Create ConfigMap from Literals
+
+Create the file `app-config.yaml` with the following content:
+
+```yaml
+# app-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  db_host: "postgres.default.svc.cluster.local"
+  db_port: "5432"
+  log_level: "info"
+  cache_ttl: "3600"
+```
+
 ```bash
-# Create a ConfigMap with key-value pairs
-kubectl create configmap app-config \
-  --from-literal=db_host=postgres.default.svc.cluster.local \
-  --from-literal=db_port=5432 \
-  --from-literal=log_level=info \
-  --from-literal=cache_ttl=3600
+kubectl apply -f app-config.yaml
 ```
 
 #### 1.2: Verify the ConfigMap
@@ -41,19 +52,27 @@ Expected output shows key-value pairs under `data:` field.
 
 #### 1.3: Create a file-based ConfigMap
 
-Create the file `nginx.conf` with the following content:
-# Create a sample nginx config file
-server {
-    listen 80;
-    location / {
-        root /usr/share/nginx/html;
-        index index.html;
+Create the file `nginx-config.yaml` with the following content:
+
+```yaml
+# nginx-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  nginx.conf: |
+    server {
+        listen 80;
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+        }
     }
-}
+```
 
 ```bash
-# Create ConfigMap from file
-kubectl create configmap nginx-config --from-file=nginx.conf
+kubectl apply -f nginx-config.yaml
 kubectl get configmap nginx-config -o yaml
 ```
 
@@ -102,7 +121,6 @@ spec:
 kubectl apply -f deploy-with-env.yaml
 kubectl logs deployment/app-deploy-env
 ```
-
 
 Expected output shows environment variables properly set.
 
@@ -227,13 +245,23 @@ kubectl get secret db-credentials -o jsonpath='{.data.password}' | base64 -d
 
 Output should show the decoded password.
 
-#### 2.3: Create Secret from Command Line
-```bash
-# Create secret using kubectl create
-kubectl create secret generic api-secret \
-  --from-literal=api_key=sk-1234567890abcdef \
-  --from-literal=api_token=token_xyz_789
+#### 2.3: Create Secret Declaratively
+Create the file `api-secret.yaml` with the following content:
 
+```yaml
+# api-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-secret
+type: Opaque
+stringData:
+  api_key: "sk-1234567890abcdef"
+  api_token: "token_xyz_789"
+```
+
+```bash
+kubectl apply -f api-secret.yaml
 kubectl get secret api-secret -o yaml
 ```
 
@@ -322,11 +350,6 @@ kubectl logs deployment/app-secret-volume
 Secret files should be readable with proper permissions.
 
 #### 2.6: Demonstrate Base64 Encoding
-```bash
-# Encode a password
-echo -n "myPassword123" | base64
-# Output: bXlQYXNzd29yZDEyMw==
-```
 
 Create the file `manual-secret.yaml` with the following content:
 
@@ -341,6 +364,9 @@ data:
   secret_key: bXlQYXNzd29yZDEyMw==
 ```
 
+> **Note:** The value `bXlQYXNzd29yZDEyMw==` is the base64 encoding of `myPassword123`.  
+> You can verify with: `echo -n "myPassword123" | base64`
+
 ```bash
 kubectl apply -f manual-secret.yaml
 
@@ -349,7 +375,6 @@ kubectl get secret manual-secret -o jsonpath='{.data.secret_key}' | base64 -d
 ```
 
 Output should show the original password.
-
 
 ---
 
@@ -365,39 +390,59 @@ Mount a ConfigMap containing HTML files and Nginx configuration into an Nginx de
 ### Steps
 
 #### 3.1: Create ConfigMaps for HTML and Configuration
+
+Create the file `nginx-html-configmap.yaml` with the following content:
+
+```yaml
+# nginx-html-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-html
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>ConfigMap Demo</title>
+    </head>
+    <body>
+        <h1>Hello from ConfigMap!</h1>
+        <p>This HTML is served from a ConfigMap-mounted volume.</p>
+    </body>
+    </html>
+```
+
+Create the file `nginx-conf-configmap.yaml` with the following content:
+
+```yaml
+# nginx-conf-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+data:
+  nginx.conf: |
+    server {
+        listen 80;
+        server_name _;
+
+        location / {
+            root /usr/share/nginx/html;
+            index index.html index.htm;
+        }
+
+        location /health {
+            access_log off;
+            return 200 "Healthy\n";
+            add_header Content-Type text/plain;
+        }
+    }
+```
+
 ```bash
-# Create HTML content
-echo '<!DOCTYPE html>
-<html>
-<head>
-    <title>ConfigMap Demo</title>
-</head>
-<body>
-    <h1>Hello from ConfigMap!</h1>
-    <p>This HTML is served from a ConfigMap-mounted volume.</p>
-</body>
-</html>' > index.html
-
-# Create nginx configuration
-echo 'server {
-    listen 80;
-    server_name _;
-
-    location / {
-        root /usr/share/nginx/html;
-        index index.html index.htm;
-    }
-
-    location /health {
-        access_log off;
-        return 200 "Healthy\n";
-        add_header Content-Type text/plain;
-    }
-}' > nginx.conf
-
-# Create ConfigMaps
-kubectl create configmap nginx-html --from-file=index.html
-kubectl create configmap nginx-conf --from-file=nginx.conf
+kubectl apply -f nginx-html-configmap.yaml
+kubectl apply -f nginx-conf-configmap.yaml
 ```
 
 #### 3.2: Create Nginx Deployment with Mounted ConfigMaps
@@ -467,19 +512,28 @@ pkill -f "port-forward"
 Both endpoints should respond successfully.
 
 #### 3.4: Update ConfigMap and Observe Changes
-```bash
-# Update the HTML file
-echo '<!DOCTYPE html>
-<html>
-<body>
-    <h1>Updated from ConfigMap!</h1>
-    <p>This update was made after deployment creation.</p>
-</body>
-</html>' > index.html
 
-# Recreate the ConfigMap
-kubectl delete configmap nginx-html
-kubectl create configmap nginx-html --from-file=index.html
+Update the file `nginx-html-configmap.yaml` with new content:
+
+```yaml
+# nginx-html-configmap.yaml (updated)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-html
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <body>
+        <h1>Updated from ConfigMap!</h1>
+        <p>This update was made after deployment creation.</p>
+    </body>
+    </html>
+```
+
+```bash
+kubectl apply -f nginx-html-configmap.yaml
 
 # Wait a few seconds (kubelet polls for updates)
 sleep 10
@@ -511,17 +565,34 @@ Create and manage namespaces, set resource quotas and limit ranges, and deploy a
 ### Steps
 
 #### 4.1: Create Custom Namespaces
+
+Create the file `namespaces.yaml` with the following content:
+
+```yaml
+# namespaces.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: development
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+```
+
 ```bash
-# Create namespaces for different environments
-kubectl create namespace development
-kubectl create namespace staging
-kubectl create namespace production
+kubectl apply -f namespaces.yaml
 
 # List all namespaces
 kubectl get namespaces
 kubectl get ns -o wide
 ```
-
 
 #### 4.2: Deploy Application within a Namespace
 Create the file `app-deployment.yaml` with the following content:
@@ -560,7 +631,6 @@ spec:
 kubectl apply -f app-deployment.yaml
 kubectl get pods -n development
 ```
-
 
 ---
 

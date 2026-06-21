@@ -243,7 +243,7 @@ Expose nginx via a cloud provider LoadBalancer (for EKS)
        service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
    spec:
      selector:
-       app: nginx-lb
+       app: nginx-app
      ports:
        - protocol: TCP
          port: 80
@@ -285,6 +285,7 @@ Understand how Kubernetes DNS resolves service names and test various FQDN forma
 
    # Inside the pod:
    apk add --no-cache curl
+   apk add --no-cache bind-tools
    ```
 
 3. **Test DNS resolution with short name**
