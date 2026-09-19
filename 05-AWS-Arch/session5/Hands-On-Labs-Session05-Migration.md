@@ -45,14 +45,15 @@ Replatform
 Repurchase
 Refactor
 ```
+| Reporting | Two VMs and a file share | Order database | Medium | Large nightly transfer |
 
 Complete:
 
 | Application | Selected strategy | Reason | Main risk |
 |---|---|---|---|
-| Internal wiki | | | |
-| Order API | | | |
-| Reporting | | | |
+| Internal wiki | Rehost + Replatform | VMs can be rehosted and Database ideally should run on AWS RDS service | NA |
+| Order API | Refactor + Replatform | Order API should be refactored into microservices along with its other dependent services and database should be first migrated into postgresql using schema converter and then hosted into RDS | |
+| Reporting | Rehost + Replatform | | |
 | Legacy archive | | | |
 
 Do not select `Rehost` for every application. Use business value, risk, time and technical constraints.
